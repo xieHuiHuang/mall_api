@@ -10,11 +10,17 @@ package main
 
 import (
 	"fmt"
+	"github.com/gin-gonic/gin/binding"
+	ut "github.com/go-playground/universal-translator"
+	"github.com/go-playground/validator/v10"
+	"github.com/spf13/viper"
 	"mall_api/user_web/global"
+	"mall_api/user_web/utils"
 
 	"go.uber.org/zap"
 
 	"mall_api/user_web/initialize"
+	my_validator "mall_api/user_web/validator"
 )
 
 func main() {
@@ -35,26 +41,26 @@ func main() {
 	//5. 初始化srv的连接
 	//initialize.InitSrvConn()
 
-	//viper.AutomaticEnv()
+	viper.AutomaticEnv()
 	//如果是本地开发环境端口号固定，线上环境启动获取端口号
-	//debug := viper.GetBool("MALL_DEBUG")
-	//if !debug {
-	//	port, err := utils.GetFreePort()
-	//	if err == nil {
-	//		global.ServerConfig.Port = port
-	//	}
-	//}
+	debug := viper.GetBool("MALL_DEBUG")
+	if !debug {
+		port, err := utils.GetFreePort()
+		if err == nil {
+			global.ServerConfig.Port = port
+		}
+	}
 
 	//注册验证器
-	//if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
-	//	_ = v.RegisterValidation("mobile", myvalidator.ValidateMobile)
-	//	_ = v.RegisterTranslation("mobile", global.Trans, func(ut ut.Translator) error {
-	//		return ut.Add("mobile", "{0} 非法的手机号码!", true) // see universal-translator for details
-	//	}, func(ut ut.Translator, fe validator.FieldError) string {
-	//		t, _ := ut.T("mobile", fe.Field())
-	//		return t
-	//	})
-	//}
+	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
+		_ = v.RegisterValidation("mobile", my_validator.ValidateMobile)
+		_ = v.RegisterTranslation("mobile", global.Trans, func(ut ut.Translator) error {
+			return ut.Add("mobile", "{0} 非法的手机号码!", true) // see universal-translator for details
+		}, func(ut ut.Translator, fe validator.FieldError) string {
+			t, _ := ut.T("mobile", fe.Field())
+			return t
+		})
+	}
 
 	/*
 		1. S()可以获取一个全局的sugar，可以让我们自己设置一个全局的logger
