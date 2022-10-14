@@ -7,3 +7,15 @@ user_srv:
 
 jwt:
   key: 'IOohnrP5!%MAZYYogKgKOP&iUA9^Xm%h'
+
+sms:
+  key: '*********'
+  secrect: '*************'
+
+redis:
+  host: '127.0.0.1'
+  port: 6379
+  password: 'topsky'
+  db1: 0
+  db2: 14
+  expire: 60
