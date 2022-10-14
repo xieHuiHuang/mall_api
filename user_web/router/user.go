@@ -11,12 +11,13 @@ package router
 import (
 	"github.com/gin-gonic/gin"
 	"mall_api/user_web/api"
+	"mall_api/user_web/middlewares"
 )
 
 func InitUserRouter(Router *gin.RouterGroup) {
 	UserRouter := Router.Group("user")
 	{
-		UserRouter.GET("list", api.GetUserList)
+		UserRouter.GET("list", middlewares.JWTAuth(), middlewares.IsAdminAuth(), api.GetUserList)
 		UserRouter.POST("login", api.Login)
 		//UserRouter.POST("register", api.Register)
 		//

@@ -93,6 +93,9 @@ func GetUserList(ctx *gin.Context) {
 		zap.S().Errorw("[GetUserList] 连接 [服务服务失败]", "msg", err.Error())
 
 	}
+	claims, _ := ctx.Get("claims")
+	currentUser := claims.(*models.CustomClaims)
+	zap.S().Infof("访问用户：%d", currentUser.Id)
 	// 生成grpc的client并调用接口
 	pn := ctx.DefaultQuery("pn", "0")
 	pnInt, _ := strconv.Atoi(pn)
@@ -185,8 +188,8 @@ func Login(c *gin.Context) {
 				//生成token
 				j := middlewares.NewJWT()
 				claims := models.CustomClaims{
-					ID:          uint(rsp.Id),
-					NickName:    rsp.Name,
+					Id:          uint(rsp.Id),
+					Name:        rsp.Name,
 					AuthorityId: uint(rsp.Role),
 					StandardClaims: jwt.StandardClaims{
 						NotBefore: time.Now().Unix(),               //签名的生效时间

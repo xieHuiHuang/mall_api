@@ -10,6 +10,7 @@ package initialize
 
 import (
 	"github.com/gin-gonic/gin"
+	"mall_api/user_web/middlewares"
 	"mall_api/user_web/router"
 )
 
@@ -23,8 +24,8 @@ func Routers() *gin.Engine {
 	//})
 
 	//配置跨域
-	//Router.Use(middlewares.Cors())
-
+	Router.Use(middlewares.Cors())
+	
 	ApiGroup := Router.Group("/user/v1")
 	router.InitUserRouter(ApiGroup)
 	//router.InitBaseRouter(ApiGroup)
