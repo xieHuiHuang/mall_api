@@ -15,11 +15,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/go-redis/redis/v8"
-	"github.com/hashicorp/consul/api"
 	"go.uber.org/zap"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 	"mall_api/user_web/forms"
 	"mall_api/user_web/global"
@@ -86,50 +83,16 @@ func HandleValidatorError(c *gin.Context, err error) {
 }
 
 func GetUserList(ctx *gin.Context) {
-	//从注册中心获取到用户服务的信息
-	cfg := api.DefaultConfig()
-	consulInfo := global.ServerConfig.ConsulInfo
-	cfg.Address = fmt.Sprintf("%s:%d", consulInfo.Host, consulInfo.Port)
-	userSrvHost := ""
-	userSrvPort := 0
-	client, err := api.NewClient(cfg)
-	if err != nil {
-		panic(err)
-	}
-	data, err := client.Agent().ServicesWithFilter(fmt.Sprintf("Service == \"%s\"", global.ServerConfig.UserSrvInfo.Name))
-	//data, err := client.Agent().ServicesWithFilter(fmt.Sprintf(`Service == "%s"`, global.ServerConfig.UserSrvInfo.Name))
-
-	if err != nil {
-		panic(err)
-	}
-	for _, value := range data {
-		userSrvHost = value.Address
-		userSrvPort = value.Port
-		break
-	}
-	if userSrvHost == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{"captcha": "[InitSrvConn] 连接 【用户服务失败】"})
-	}
-	//拨号连接用户grpc服务器 跨域的问题 - 后端解决 也可以前端来解决
-	userConn, err := grpc.Dial(fmt.Sprintf("%s:%d", userSrvHost, userSrvPort),
-		grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		zap.S().Errorw("[GetUserList] 连接 [服务服务失败]", "msg", err.Error())
-
-	}
 	claims, _ := ctx.Get("claims")
 	currentUser := claims.(*models.CustomClaims)
 	zap.S().Infof("访问用户：%d", currentUser.Id)
-
-	// 生成grpc的client并调用接口
-	userSrvClient := proto.NewUserClient(userConn)
 
 	pn := ctx.DefaultQuery("pn", "0")
 	pnInt, _ := strconv.Atoi(pn)
 	pSize := ctx.DefaultQuery("psize", "10")
 	pSizeInt, _ := strconv.Atoi(pSize)
 
-	rsp, err := userSrvClient.GetUserList(context.Background(), &proto.PageInfo{
+	rsp, err := global.UserSrvClient.GetUserList(context.Background(), &proto.PageInfo{
 		Pn:    uint32(pnInt),
 		PSize: uint32(pSizeInt),
 	})
@@ -141,7 +104,6 @@ func GetUserList(ctx *gin.Context) {
 	zap.S().Debugf("获取用户列表页")
 	result := make([]interface{}, 0)
 	for _, value := range rsp.Data {
-		//data := make(map[string]interface{})
 		user := response.UserResponse{
 			Id:   value.Id,
 			Name: value.Name,
@@ -150,12 +112,6 @@ func GetUserList(ctx *gin.Context) {
 			Gender:   value.Gender,
 			Mobile:   value.Mobile,
 		}
-		//data["id"] = value.Id
-		//data["name"] = value.Name
-		//data["birthday"] = value.BirthDay
-		//data["gender"] = value.Gender
-		//data["mobile"] = value.Mobile
-		//result = append(result, data)
 		result = append(result, user)
 	}
 	ctx.JSON(http.StatusOK, result)
@@ -176,15 +132,7 @@ func Login(c *gin.Context) {
 		return
 	}
 	//登录的逻辑
-	userConn, err := grpc.Dial(fmt.Sprintf("%s:%d", global.ServerConfig.UserSrvInfo.Host,
-		global.ServerConfig.UserSrvInfo.Port), grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		zap.S().Errorw("[GetUserByMobile] 连接 [服务服务失败]", "msg", err.Error())
-
-	}
-	// 生成grpc的client并调用接口
-	userSrvClient := proto.NewUserClient(userConn)
-	if rsp, err := userSrvClient.GetUserByMobile(context.Background(), &proto.MobileRequest{
+	if rsp, err := global.UserSrvClient.GetUserByMobile(context.Background(), &proto.MobileRequest{
 		Mobile: loginForm.Mobile,
 	}); err != nil {
 		if e, ok := status.FromError(err); ok {
@@ -203,7 +151,7 @@ func Login(c *gin.Context) {
 	} else {
 		//只是查询到用户了而已，并没有检查密码
 		// 校验密码
-		if passRsp, pasErr := userSrvClient.CheckPassWord(context.Background(), &proto.PasswordCheckInfo{
+		if passRsp, pasErr := global.UserSrvClient.CheckPassWord(context.Background(), &proto.PasswordCheckInfo{
 			Password:          loginForm.Password,
 			EncryptedPassword: rsp.Password,
 		}); pasErr != nil {
@@ -273,15 +221,8 @@ func Register(c *gin.Context) {
 			return
 		}
 	}
-	userConn, err := grpc.Dial(fmt.Sprintf("%s:%d", global.ServerConfig.UserSrvInfo.Host,
-		global.ServerConfig.UserSrvInfo.Port), grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		zap.S().Errorw("[GetUserByMobile] 连接 [服务服务失败]", "msg", err.Error())
 
-	}
-	// 生成grpc的client并调用接口
-	userSrvClient := proto.NewUserClient(userConn)
-	user, err := userSrvClient.CreateUser(context.Background(), &proto.CreateUserInfo{
+	user, err := global.UserSrvClient.CreateUser(context.Background(), &proto.CreateUserInfo{
 		Name:     registerForm.Mobile,
 		Password: registerForm.Password,
 		Mobile:   registerForm.Mobile,

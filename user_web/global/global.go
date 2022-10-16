@@ -11,11 +11,12 @@ package global
 import (
 	ut "github.com/go-playground/universal-translator"
 	"mall_api/user_web/config"
-	//"mall_api/user_web/proto"
+	"mall_api/user_web/proto"
 )
 
 var (
 	Trans ut.Translator
 
-	ServerConfig *config.ServerConfig = &config.ServerConfig{}
+	ServerConfig  *config.ServerConfig = &config.ServerConfig{}
+	UserSrvClient proto.UserClient
 )
