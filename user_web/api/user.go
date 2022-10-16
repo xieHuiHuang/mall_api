@@ -15,6 +15,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/go-redis/redis/v8"
+	"github.com/hashicorp/consul/api"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -85,11 +86,33 @@ func HandleValidatorError(c *gin.Context, err error) {
 }
 
 func GetUserList(ctx *gin.Context) {
-	// 拨号连接用户grpc服务器
-	//ip := "127.0.0.1"
-	//port := 50051
-	userConn, err := grpc.Dial(fmt.Sprintf("%s:%d", global.ServerConfig.UserSrvInfo.Host,
-		global.ServerConfig.UserSrvInfo.Port), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	//从注册中心获取到用户服务的信息
+	cfg := api.DefaultConfig()
+	consulInfo := global.ServerConfig.ConsulInfo
+	cfg.Address = fmt.Sprintf("%s:%d", consulInfo.Host, consulInfo.Port)
+	userSrvHost := ""
+	userSrvPort := 0
+	client, err := api.NewClient(cfg)
+	if err != nil {
+		panic(err)
+	}
+	data, err := client.Agent().ServicesWithFilter(fmt.Sprintf("Service == \"%s\"", global.ServerConfig.UserSrvInfo.Name))
+	//data, err := client.Agent().ServicesWithFilter(fmt.Sprintf(`Service == "%s"`, global.ServerConfig.UserSrvInfo.Name))
+
+	if err != nil {
+		panic(err)
+	}
+	for _, value := range data {
+		userSrvHost = value.Address
+		userSrvPort = value.Port
+		break
+	}
+	if userSrvHost == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"captcha": "[InitSrvConn] 连接 【用户服务失败】"})
+	}
+	//拨号连接用户grpc服务器 跨域的问题 - 后端解决 也可以前端来解决
+	userConn, err := grpc.Dial(fmt.Sprintf("%s:%d", userSrvHost, userSrvPort),
+		grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		zap.S().Errorw("[GetUserList] 连接 [服务服务失败]", "msg", err.Error())
 
@@ -97,12 +120,15 @@ func GetUserList(ctx *gin.Context) {
 	claims, _ := ctx.Get("claims")
 	currentUser := claims.(*models.CustomClaims)
 	zap.S().Infof("访问用户：%d", currentUser.Id)
+
 	// 生成grpc的client并调用接口
+	userSrvClient := proto.NewUserClient(userConn)
+
 	pn := ctx.DefaultQuery("pn", "0")
 	pnInt, _ := strconv.Atoi(pn)
 	pSize := ctx.DefaultQuery("psize", "10")
 	pSizeInt, _ := strconv.Atoi(pSize)
-	userSrvClient := proto.NewUserClient(userConn)
+
 	rsp, err := userSrvClient.GetUserList(context.Background(), &proto.PageInfo{
 		Pn:    uint32(pnInt),
 		PSize: uint32(pSizeInt),
@@ -143,7 +169,7 @@ func Login(c *gin.Context) {
 		return
 	}
 	// 图片验证码校验
-	if store.Verify(loginForm.CaptchaId, loginForm.Captcha, false) {
+	if store.Verify(loginForm.CaptchaId, loginForm.Captcha, true) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"captcha": "验证码错误",
 		})

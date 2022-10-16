@@ -11,6 +11,7 @@ package config
 type UserSrvConfig struct {
 	Host string `mapstructure:"host" json:"host"`
 	Port int    `mapstructure:"port" json:"port"`
+	Name string `mapstructure:"name" json:"name"`
 }
 
 type JWTConfig struct {
@@ -43,4 +44,5 @@ type ServerConfig struct {
 	JWTInfo     JWTConfig     `mapstructure:"jwt" json:"jwt"`
 	AliSmsInfo  AliSmsConfig  `mapstructure:"sms" json:"sms"`
 	RedisInfo   RedisConfig   `mapstructure:"redis" json:"redis"`
+	ConsulInfo  ConsulConfig  `mapstructure:"consul" json:"consul"`
 }

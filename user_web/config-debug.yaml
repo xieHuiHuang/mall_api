@@ -4,6 +4,7 @@ port: 8021
 user_srv:
   host: '127.0.0.1'
   port: 50051
+  name: 'user_srv'
 
 jwt:
   key: 'IOohnrP5!%MAZYYogKgKOP&iUA9^Xm%h'
@@ -19,3 +20,7 @@ redis:
   db1: 0
   db2: 14
   expire: 60
+
+consul:
+  host: '127.0.0.1'
+  port: 8500
