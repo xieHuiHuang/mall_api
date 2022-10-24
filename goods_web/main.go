@@ -1,6 +1,6 @@
 /**
  * @file: main.go
- * @time: 2022-10-13 16:50
+ * @time: 2022-10-23 12:02
  * @Author: jack
  * @Email: 793936517@qq.com
  * @desc:
@@ -10,23 +10,17 @@ package main
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin/binding"
-	ut "github.com/go-playground/universal-translator"
-	"github.com/go-playground/validator/v10"
 	"github.com/satori/go.uuid"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
-	"mall_api/user_web/global"
-	"mall_api/user_web/utils"
-	"mall_api/user_web/utils/register/consul"
-	my_validator "mall_api/user_web/validator"
+	"mall_api/goods_web/global"
+	"mall_api/goods_web/utils"
+	"mall_api/goods_web/utils/register/consul"
 	"os"
 	"os/signal"
 	"syscall"
 
-	//"github.com/nacos-group/nacos-sdk-go/inner/uuid"
-
-	"mall_api/user_web/initialize"
+	"mall_api/goods_web/initialize"
 )
 
 func main() {
@@ -53,16 +47,6 @@ func main() {
 		if err == nil {
 			global.ServerConfig.Port = port
 		}
-	}
-	//注册验证器
-	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
-		_ = v.RegisterValidation("mobile", my_validator.ValidateMobile)
-		_ = v.RegisterTranslation("mobile", global.Trans, func(ut ut.Translator) error {
-			return ut.Add("mobile", "{0} 非法的手机号码!", true) // see universal-translator for details
-		}, func(ut ut.Translator, fe validator.FieldError) string {
-			t, _ := ut.T("mobile", fe.Field())
-			return t
-		})
 	}
 
 	//服务注册
