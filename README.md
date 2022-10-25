@@ -6,6 +6,7 @@
 + 开发工具：goland2021.3.3
 + 技术栈 go、gin、gorm、grpc、consul、nacos、docker
 + 数据库：mysql8、redis5.0
++ 技术框架流程图：https://www.processon.com/view/link/632e7d427d9c081f94ea4c3e
 
 1.2 代码git clone
 + git clone仓库代码：git clone git@github.com:xiehuihuang/mall_api.git
